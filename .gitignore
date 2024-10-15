@@ -1,0 +1,5 @@
+test_fastq/
+all_sequences/
+complete_genomes/
+sourmash/database/gtdb-rs214-reps.k31.zip
+sourmash/database/gtdb-rs214-k31.zip

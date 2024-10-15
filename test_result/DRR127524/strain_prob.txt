@@ -1,0 +1,2 @@
+Cluster_ID	Probability	Number_of_strains	Strains_in_the_cluster
+C58	0.17533432248111847	2	GCF_000493815,GCA_000493815

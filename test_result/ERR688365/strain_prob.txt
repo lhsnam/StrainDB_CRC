@@ -1,0 +1,1 @@
+Cluster_ID	Probability	Number_of_strains	Strains_in_the_cluster
