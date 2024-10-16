@@ -1,8 +1,3 @@
-"""
-This script reads all CSV files in the current directory, filters rows where
-the 'name' column contains 'Fusobacterium', and writes the results
-to a new CSV file.
-"""
 import glob
 import pandas as pd
 
@@ -21,6 +16,14 @@ for file in csv_files:
     if 'name' in df.columns:
         # Filter rows where 'name' contains 'Fusobacterium'
         filtered_rows = df[df['name'].str.contains("Fusobacterium", na=False)]
+
+        # Determine the 'database' value based on the file name
+        if "reps" in file.lower():
+            filtered_rows['database'] = "rs214_reps_only"
+        elif "fuso" in file.lower():
+            filtered_rows['database'] = "rs214_fuso"
+        else:
+            filtered_rows['database'] = "rs214_only"  # Default value
 
         # Append the filtered rows to the result DataFrame
         result_df = pd.concat([result_df, filtered_rows], ignore_index=True)

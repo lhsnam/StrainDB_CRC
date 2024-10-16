@@ -1,0 +1,122 @@
+```{r}
+library(ggplot2)
+library(dplyr)
+```
+
+```{r}
+fuso_db <- read.csv("sourmash/DRR/filtered_fusobacterium.csv")
+head(fuso_db)
+
+
+desired_order <- c("rs214_reps_only", "rs214_only", "rs214_fuso")
+# Update the fuso_db dataframe
+fuso_db <- fuso_db %>%
+  mutate(
+    database = factor(database, levels = desired_order) # Reorder the database factor
+  )
+
+```
+
+```{r}
+# Assuming fuso_db is a data frame
+# Calculate averages and counts, only counting match_containment_ani > 0
+average_db <- fuso_db %>%
+  group_by(group, database, query_name) %>%
+  summarise(
+    avg_match_containment_ani = mean(match_containment_ani, na.rm = TRUE),
+    count = sum(match_containment_ani > 0),  # Count only where match_containment_ani > 0
+    .groups = 'drop'
+  )
+
+# Create all combinations of group and database
+unique_combinations <- expand.grid(group = unique(fuso_db$group), database = unique(fuso_db$database))
+
+# Join with the average_db and replace NAs with 0
+final_db <- unique_combinations %>%
+  left_join(average_db, by = c("group", "database")) %>%
+  mutate(
+    avg_match_containment_ani = ifelse(is.na(avg_match_containment_ani), 0, avg_match_containment_ani),
+    count = ifelse(is.na(count), 0, count)
+  )
+
+# View the final database
+print(final_db)
+
+non_group_db <- fuso_db %>%
+  group_by(group, database) %>%
+  summarise(
+    avg_match_containment_ani = mean(match_containment_ani, na.rm = TRUE),
+    count = sum(match_containment_ani > 0),  # Count only where match_containment_ani > 0
+    count_pos = sum(match_containment_ani > 0.935),
+    .groups = 'drop'
+  )
+
+```
+```{r}
+(plot <- ggplot(non_group_db,
+                aes(group, count_pos)) +
+    geom_col(aes(fill = database),
+             position = position_dodge2()) +
+    ylim(0, 16)
+)
+
+(plot2 <- ggplot(final_db,
+                 aes(group, count)) +
+    geom_col(aes(fill = database),
+             position = position_dodge2())
+)
+
+(plot3 <- ggplot(fuso_db,
+                 aes(database, match_containment_ani)) +
+    geom_boxplot(aes(color = database)) +
+    facet_wrap(~ group, nrow = 1) +
+    ylim(0.8, 1) +
+    theme_classic()
+)
+
+fuso_db
+
+# Define a function to map colors based on match_containment_ani
+fuso_db <- fuso_db %>%
+  mutate(fill_color = case_when(
+    match_containment_ani < 0.9 ~ "#adb5bd",
+    match_containment_ani >= 0.9 ~ "#1d3557"
+  ),
+  match_category = 1
+  )
+
+# Reorder 'group' based on 'match_containment_ani' for plotting
+fuso_db <- fuso_db %>%
+  arrange(database, match_containment_ani) %>%
+  mutate(group = factor(group, levels = unique(group)))
+
+(plot4 <- ggplot(fuso_db) +
+    geom_col(aes(x = query_name,
+                 y = match_category,
+                 fill = fill_color,
+                 group = database,
+                 color = database)) +
+    scale_fill_manual(values = c("#adb5bd" = "#adb5bd",
+                                 "#1d3557" = "#1d3557")) +
+    labs(fill = "Containment Score") +
+    theme_classic() +
+    facet_wrap(~ group,
+               nrow = 1) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+)
+
+
+ggplot2::ggsave(filename = "plot_pos.pdf",
+                plot = plot,
+                device = "pdf",
+                path = "/data/namlhs/StrainDB_CRC/sourmash/figures/",
+                width = 10,
+                height = 5,
+                units = "in",
+                dpi = "retina",
+                limitsize = TRUE,
+                bg = NULL)
+```
+
+```{r}
+```
